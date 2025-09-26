@@ -1,4 +1,4 @@
-module selectGo
+module github.com/pioruner/serialGO
 
 go 1.25.0
 
