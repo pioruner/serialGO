@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"unsafe"
 
 	"go.bug.st/serial"
 )
@@ -56,7 +56,8 @@ func main() {
 	// Устанавливаем обработчик Ctrl+C
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
+	ch1 := float32(0.00)
+	ch2 := float32(0.00)
 	// Чтение в отдельной горутине
 	done := make(chan struct{})
 	go func() {
@@ -80,18 +81,20 @@ func main() {
 			}
 
 			// 3-й, 4-й, 5-й, 6-й байт — float32 (индексация с нуля)
-			value := binary.LittleEndian.Uint32(packet[2:6])
-			f := float32frombits(value)
-
-			fmt.Printf("Packet: % X | Value: %f\n", packet, f)
+			value := binary.BigEndian.Uint32(packet[3:7])
+			//f := float32frombits(value)
+			f := math.Float32frombits(value)
+			//fmt.Printf("Packet: % X | Value: %f | BYTES: % X \n", packet, f, packet[8])
+			if packet[8] == 0 {
+				ch1 = f
+			} else {
+				ch2 = f
+			}
+			fmt.Printf("Chanel 1: %f | Chanel 2: %f\n", ch1, ch2)
 		}
 	}()
 
 	<-stop
 	close(done)
 	log.Println("Stopping reader, exiting...")
-}
-
-func float32frombits(b uint32) float32 {
-	return *(*float32)(unsafe.Pointer(&b))
 }
